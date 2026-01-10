@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/models"
 	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/queue"
@@ -27,16 +26,11 @@ func main() {
 	}
 
 	job := &models.Job{
-		ID: 3,
-		Status: models.StateQueued,
-		Retries: 1,
-		MaxRetries: 3,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		ID: 35,
 	}
 
 	queue.EnqueueJob(job)
-	fmt.Printf("[Job %d] inserted successfully\n",job.ID)
+	fmt.Printf("[Job %d] inserted successfully\n", job.ID)
 
 	wg.Wait()
 
