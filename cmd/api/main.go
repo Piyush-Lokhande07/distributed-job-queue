@@ -25,12 +25,18 @@ func main() {
 		go worker.StartWorker(i, &wg)
 	}
 
-	job := &models.Job{
-		ID: 35,
-	}
+	for i:=101;i<=105;i++{
+		job := &models.Job{
+			ID: i,
+		}
 
-	queue.EnqueueJob(job)
-	fmt.Printf("[Job %d] inserted successfully\n", job.ID)
+		err = queue.EnqueueJob(job)
+		if err != nil {
+			fmt.Printf("Enqueue Error: %v\n", err)
+		} else {
+			fmt.Printf("Job %d enqueued successfully!\n",i)
+		}
+	}
 
 	wg.Wait()
 

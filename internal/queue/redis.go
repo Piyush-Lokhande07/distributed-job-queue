@@ -57,6 +57,6 @@ func EnqueueJob(job *models.Job) error {
 		return fmt.Errorf("Could not save job in Redis Hash!\n")
 	}
 
-	return RDB.LPush(Ctx, "job_queue", job.ID).Err()
+	return RDB.LPush(Ctx, "job_queue", jobIDStr).Err()
 
 }
