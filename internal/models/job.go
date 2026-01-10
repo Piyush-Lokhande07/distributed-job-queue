@@ -3,15 +3,14 @@ package models
 import "time"
 
 const (
-
-	StateQueued = "QUEUED"
+	StateQueued     = "QUEUED"
 	StateInProgress = "IN_PROGRESS"
-	StateCompleted = "COMPLETED"
-	StateFailed = "FAILED"
+	StateCompleted  = "COMPLETED"
+	StateFailed     = "FAILED"
 )
 
 type Job struct {
-	ID         string    `json:"id"`
+	ID         int       `json:"id"`
 	Status     string    `json:"status"`
 	Retries    int       `json:"retries"`
 	MaxRetries int       `json:"max_retries"`
