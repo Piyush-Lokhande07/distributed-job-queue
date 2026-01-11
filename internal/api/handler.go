@@ -43,3 +43,69 @@ func HandleCreateJob(w http.ResponseWriter, r *http.Request) {
 	})
 
 }
+
+func GetMetrics(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	queueDepth, err := queue.RDB.LLen(queue.Ctx, "job_queue").Result()
+
+	if err != nil {
+		queueDepth = 0
+	}
+
+	var processed, failed, retried, inProgress int64
+
+	iter := queue.RDB.Scan(queue.Ctx, 0, "job:*", 0).Iterator()
+
+	for iter.Next(queue.Ctx) {
+
+		fields, err := queue.RDB.HMGet(queue.Ctx, iter.Val(), "status", "data").Result()
+
+		if err != nil || len(fields) < 2 {
+			continue
+		}
+		status, _ := fields[0].(string)
+		var retriesCount int
+
+		if dataJson, ok := fields[1].(string); ok {
+			var job models.Job
+			if err := json.Unmarshal([]byte(dataJson), &job); err == nil {
+				retriesCount = job.Retries
+			}
+		}
+
+		
+
+		switch status {
+		case models.StateCompleted:
+			processed++
+		case models.StateFailed:
+			failed++
+		case models.StateInProgress:
+			inProgress++
+		case models.StateQueued:
+
+		}
+
+		if retriesCount > 0 {
+			retried++
+		}
+
+	}
+
+	metrics := map[string]int64{
+		"processed":   processed,
+		"failed":      failed,
+		"in_progress": inProgress,
+		"queued":      queueDepth,
+		"retried":     retried,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(metrics)
+
+}

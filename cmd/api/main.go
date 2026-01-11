@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"sync"
 
-	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/models"
+	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/api"
 	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/queue"
 	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/worker"
 )
@@ -25,17 +26,13 @@ func main() {
 		go worker.StartWorker(i, &wg)
 	}
 
-	for i:=101;i<=105;i++{
-		job := &models.Job{
-			ID: i,
-		}
+	http.HandleFunc("/jobs", api.HandleCreateJob)
+	http.HandleFunc("/metrics", api.GetMetrics)
 
-		err = queue.EnqueueJob(job)
-		if err != nil {
-			fmt.Printf("Enqueue Error: %v\n", err)
-		} else {
-			fmt.Printf("Job %d enqueued successfully!\n",i)
-		}
+	fmt.Println("Server running on port:[8080]")
+
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		fmt.Printf("Server failed %v\n", err)
 	}
 
 	wg.Wait()

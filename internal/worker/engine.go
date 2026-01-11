@@ -53,7 +53,13 @@ func StartWorker(ID int, wg *sync.WaitGroup) {
 
 				}(jobID, delay)
 
+			}else{
+				fmt.Printf("[Worker %d] Permanent Job failed for Job:%d\n",ID,idInt)
 			}
+
+			continue
+
+			
 		}
 
 		
