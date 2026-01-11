@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/models"
@@ -19,16 +20,29 @@ func HandleCreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	queueLen, err := queue.RDB.LLen(queue.Ctx, "job_queue").Result()
+	if err != nil {
+		http.Error(w, "Queue Service Unavailable", http.StatusServiceUnavailable)
+		return
+	}
+
+	if queueLen >= 1000 {
+		fmt.Printf("Backpressure triggered! Queue length:%d\n", queueLen)
+		http.Error(w, "Server is busy! Queue is full! Try later ", http.StatusServiceUnavailable)
+		return
+	}
+
 	var req CreateJobRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+
 	job := models.Job{
 		ID: req.ID,
 	}
-	err := queue.EnqueueJob(&job)
+	err = queue.EnqueueJob(&job)
 
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
