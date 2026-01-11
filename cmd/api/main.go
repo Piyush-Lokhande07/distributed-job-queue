@@ -28,6 +28,7 @@ func main() {
 
 	http.HandleFunc("/jobs", api.HandleCreateJob)
 	http.HandleFunc("/metrics", api.GetMetrics)
+	http.HandleFunc("/status",api.GetJobStatus)
 
 	fmt.Println("Server running on port:[8080]")
 

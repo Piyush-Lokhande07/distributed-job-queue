@@ -78,8 +78,6 @@ func GetMetrics(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		
-
 		switch status {
 		case models.StateCompleted:
 			processed++
@@ -108,4 +106,29 @@ func GetMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(metrics)
 
+}
+
+func GetJobStatus(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != http.MethodGet {
+
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	id := r.URL.Query().Get("id")
+
+	if id == "" {
+		http.Error(w, "Missing Job ID", http.StatusBadRequest)
+		return
+	}
+
+	val, err := queue.RDB.HGet(queue.Ctx, "job:"+id, "data").Result()
+	if err != nil {
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(val))
 }
