@@ -13,8 +13,6 @@ import (
 func StartWorker(ID int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	fmt.Printf("[Worker %d] Started and waiting for jobs...\n", ID)
-
 	for {
 
 		result, err := queue.RDB.BRPop(queue.Ctx, 0, "job_queue").Result()

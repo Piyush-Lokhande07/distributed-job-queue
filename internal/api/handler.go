@@ -7,6 +7,7 @@ import (
 
 	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/models"
 	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/queue"
+	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/ratelimit"
 )
 
 type CreateJobRequest struct {
@@ -14,6 +15,11 @@ type CreateJobRequest struct {
 }
 
 func HandleCreateJob(w http.ResponseWriter, r *http.Request) {
+
+	if ratelimit.IsGlobalRateLimitExceeded(){
+		http.Error(w,"Rate limit exceeded",http.StatusTooManyRequests)
+		return
+	}
 
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -59,6 +65,12 @@ func HandleCreateJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetMetrics(w http.ResponseWriter, r *http.Request) {
+
+	if ratelimit.IsGlobalRateLimitExceeded(){
+		http.Error(w,"Rate limit exceeded",http.StatusTooManyRequests)
+		return
+	}
+
 
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -123,6 +135,12 @@ func GetMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetJobStatus(w http.ResponseWriter, r *http.Request) {
+
+	if ratelimit.IsGlobalRateLimitExceeded(){
+		http.Error(w,"Rate limit exceeded",http.StatusTooManyRequests)
+		return
+	}
+
 
 	if r.Method != http.MethodGet {
 
