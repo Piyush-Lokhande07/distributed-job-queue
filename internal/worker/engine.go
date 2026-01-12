@@ -2,6 +2,7 @@ package worker
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 	"sync"
 	"time"
@@ -13,83 +14,84 @@ import (
 func StartWorker(ID int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
+	workerLog := slog.With("worker_id", ID)
+	workerLog.Info("Worker Started and waiting for jobs")
+
 	for {
 
 		result, err := queue.RDB.BRPop(queue.Ctx, 0, "job_queue").Result()
 		if err != nil {
-			fmt.Printf("[Worker %d] Error while popping job %v\n", ID, err)
+			workerLog.Error("Error while popping job","error",err)
+			continue
 		}
 		jobID := result[1]
 
 		idInt, err := strconv.Atoi(jobID)
 		if err != nil {
-			fmt.Printf("Error converting ID: %v\n", err)
+			workerLog.Error("Error converting ID","error",err)
 			continue
 		}
 
-		err = PerformWork(ID,idInt)
+		err = PerformWork(ID, idInt, workerLog)
 
 		if err != nil {
 
 			currentRetries, _ := queue.HandleFailure(idInt)
-			fmt.Printf("[Worker %d] Job %d failed. Attempting retry...[%d]\n", ID, idInt,currentRetries)
+			jobLog:= workerLog.With("job_log",idInt)
 
-			
+		
 
 			if currentRetries <= 3 {
 				delay := time.Duration(1<<uint(currentRetries)) * time.Second
+				jobLog.Warn("Job failed, scheduling retry", "delay",delay.String())
 
-				fmt.Printf("[Worker %d] Retrying Job: %d in %v..\n",ID,idInt,delay)
-
-				go func(id string,d time.Duration){
+				go func(id string, d time.Duration) {
 					time.Sleep(d)
-					err:=queue.RDB.LPush(queue.Ctx, "job_queue",id).Err()
+					err := queue.RDB.LPush(queue.Ctx, "job_queue", id).Err()
 
-					if err!=nil{
-						fmt.Printf("CRITICAL: Failed to re-queue Job:%s: %v\n", jobID,err)
+					if err != nil {
+						jobLog.Error("CRITICAL: Failed to re-queue Job","error",err)
 					}
 
 				}(jobID, delay)
 
-			}else{
-				fmt.Printf("[Worker %d] Permanent Job failed for Job:%d\n",ID,idInt)
+			} else {
+				jobLog.Info("Permanent job failure")
 			}
 
 			continue
 
-			
 		}
 
-		
-
-		
 	}
 
 }
 
-func PerformWork(wId int, jId int) error {
+func PerformWork(wId int, jId int,  baseLog *slog.Logger) error {
+
+	jobLog:= baseLog.With("job_id",jId)
 
 	if time.Now().UnixNano()%2 == 0 {
+		jobLog.Debug("Simulated error triggered")
 		return fmt.Errorf("Simulated error")
 	}
 
-	fmt.Printf("[Worker %d] Grabbed the Job:%d\n", wId, jId)
 	err := queue.UpdateStatus(jId, models.StateInProgress)
 
 	if err != nil {
-		fmt.Printf("[Worker %d] Error updating status for Job:%d %v\n",wId,jId, err)
+		jobLog.Error("Error updating status")
 	}
 
-	fmt.Printf("[Worker %d] Processing the Job:%d\n",wId, jId)
+	jobLog.Info("Processing the Job")
 	time.Sleep(2 * time.Second)
 
 	err = queue.UpdateStatus(jId, models.StateCompleted)
 
 	if err != nil {
-		fmt.Printf("[Worker %d] Error updating status for Job:%d %v\n",wId,jId, err)
+		jobLog.Error("Error updating status for Job")
 	}
-
-	fmt.Printf("[Worker %d] Finished Job:%d \n",wId,jId)
+	
+	jobLog.Info("Finished Job!")
 	time.Sleep(2 * time.Second)
 	return nil
 }

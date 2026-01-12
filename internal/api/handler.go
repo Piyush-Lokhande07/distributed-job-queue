@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/models"
@@ -16,8 +16,15 @@ type CreateJobRequest struct {
 
 func HandleCreateJob(w http.ResponseWriter, r *http.Request) {
 
-	if ratelimit.IsGlobalRateLimitExceeded(){
-		http.Error(w,"Rate limit exceeded",http.StatusTooManyRequests)
+	reqLog := slog.With(
+		"method", r.Method,
+		"path", r.URL.Path,
+		"ip", r.RemoteAddr,
+	)
+
+	if ratelimit.IsGlobalRateLimitExceeded() {
+		reqLog.Warn("Request rejected. Global Rate limit exceeded!!")
+		http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
 		return
 	}
 
@@ -33,7 +40,7 @@ func HandleCreateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if queueLen >= 1000 {
-		fmt.Printf("Backpressure triggered! Queue length:%d\n", queueLen)
+		reqLog.Warn("Backpressure triggered!", "queue_length", queueLen)
 		http.Error(w, "Server is busy! Queue is full! Try later ", http.StatusServiceUnavailable)
 		return
 	}
@@ -51,6 +58,7 @@ func HandleCreateJob(w http.ResponseWriter, r *http.Request) {
 	err = queue.EnqueueJob(&job)
 
 	if err != nil {
+		reqLog.Error("Internal Server Error", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -66,11 +74,17 @@ func HandleCreateJob(w http.ResponseWriter, r *http.Request) {
 
 func GetMetrics(w http.ResponseWriter, r *http.Request) {
 
-	if ratelimit.IsGlobalRateLimitExceeded(){
-		http.Error(w,"Rate limit exceeded",http.StatusTooManyRequests)
+	reqLog := slog.With(
+		"method", r.Method,
+		"path", r.URL.Path,
+		"ip", r.RemoteAddr,
+	)
+
+	if ratelimit.IsGlobalRateLimitExceeded() {
+		reqLog.Warn("Rate limit exceeded")
+		http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
 		return
 	}
-
 
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -135,12 +149,17 @@ func GetMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetJobStatus(w http.ResponseWriter, r *http.Request) {
+	reqLog := slog.With(
+		"method", r.Method,
+		"path", r.URL.Path,
+		"ip", r.RemoteAddr,
+	)
 
-	if ratelimit.IsGlobalRateLimitExceeded(){
-		http.Error(w,"Rate limit exceeded",http.StatusTooManyRequests)
+	if ratelimit.IsGlobalRateLimitExceeded() {
+		reqLog.Warn("Rate limit exceeded")
+		http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
 		return
 	}
-
 
 	if r.Method != http.MethodGet {
 

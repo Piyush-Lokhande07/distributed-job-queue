@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/api"
@@ -11,6 +13,10 @@ import (
 )
 
 func main() {
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	slog.SetDefault(logger)
 
 	err := queue.Connect()
 
@@ -28,9 +34,10 @@ func main() {
 
 	http.HandleFunc("/jobs", api.HandleCreateJob)
 	http.HandleFunc("/metrics", api.GetMetrics)
-	http.HandleFunc("/status",api.GetJobStatus)
+	http.HandleFunc("/status", api.GetJobStatus)
 
-	fmt.Println("Server running on port:[8080]")
+	// fmt.Println("Server running on port:[8080]")
+	slog.Info("Server running","port","8080")
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		fmt.Printf("Server failed %v\n", err)
