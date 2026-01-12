@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  # Service 1: The Database
+  redis:
+    image: redis:alpine       
+    container_name: redis_db  # Name of the container
+    restart: always
+    ports:
+      - "6379:6379"          
+
+  # Service 2: Go App
+  app:
+    build: .                  # Look for the Dockerfile in the current folder to build
+    container_name: go_app
+    ports:
+      - "8080:8080"           
+    environment:
+      - PORT=8080
+      - REDIS_ADDR=redis:6379 
+      - REDIS_PASSWORD=
+    depends_on:
+      - redis                 # Ensure Redis starts before the Go App starts
