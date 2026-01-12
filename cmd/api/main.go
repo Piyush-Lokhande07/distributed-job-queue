@@ -13,16 +13,30 @@ import (
 	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/api"
 	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/queue"
 	"github.com/Piyush-Lokhande07/distributed-job-queue/internal/worker"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 
+	err := godotenv.Load()
+
+	if err != nil {
+		slog.Error("Failed to load .env")
+	}
+
+	port:=os.Getenv("PORT")
+
+	if port==""{
+		port="8080"
+	}
+
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
+
 	ctx, cancel := context.WithCancel(context.Background())
 
-	err := queue.Connect()
+	err = queue.Connect()
 
 	if err != nil {
 		slog.Error("Error connecting to Redis", "error", err)
@@ -42,12 +56,12 @@ func main() {
 	http.HandleFunc("/status", api.GetJobStatus)
 
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":"+port,
 		Handler: nil,
 	}
 
 	go func() {
-		slog.Info("Server running", "port", 8080)
+		slog.Info("Server running", "port", port)
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			slog.Error("HTTP Server error", "error", err)
 		}
@@ -63,9 +77,9 @@ func main() {
 	shutDownContext, shutDownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutDownCancel()
 
-	if err:=server.Shutdown(shutDownContext);err!=nil{
-		slog.Error("API server forced to close","error",err)
-	}else{
+	if err := server.Shutdown(shutDownContext); err != nil {
+		slog.Error("API server forced to close", "error", err)
+	} else {
 		slog.Info("API server closed gracefully.")
 	}
 

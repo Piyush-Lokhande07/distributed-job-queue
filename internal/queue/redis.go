@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 	"time"
 
@@ -18,9 +19,17 @@ var (
 
 func Connect() error {
 
+	addr := os.Getenv("REDIS_ADDR")
+
+	if addr == "" {
+		addr = "localhost:6379"
+	}
+
+	password:= os.Getenv("REDIS_PASSWORD")
+
 	RDB = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
+		Addr:     addr,
+		Password: password,
 		DB:       0,
 		Protocol: 2,
 	})
