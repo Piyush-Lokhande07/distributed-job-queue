@@ -16,9 +16,6 @@ This project focuses on **reliability, backpressure, graceful shutdown, and obse
 - **Retry with Exponential Backoff**  
   Failed jobs are retried automatically with increasing delay.
 
-- **Failure Injection**  
-  Supports deterministic and random failure injection to validate retry and resilience behavior.
-
 - **Graceful Shutdown**  
   Ensures in-flight jobs complete before workers exit on `SIGINT` / `SIGTERM`.
 
